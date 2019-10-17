@@ -21,6 +21,7 @@ class CheatMoney(sc2.BotAI):
         self.build_worker1_done = False
 
         self.race_self = None
+        self.hq_location = None
 
     async def build_worker1(self):
         if not self.build_worker1_done:
@@ -33,9 +34,9 @@ class CheatMoney(sc2.BotAI):
                 return unit['race']
 
     async def racecheck_self(self):
-        if not self.race_self:
-            self.race_self = str(self.detect_race(self.townhalls.first.name))
-            print("Playing as " + str(self.race_self))
+        # if not self.race_self:
+        self.race_self = str(self.detect_race(self.townhalls.first.name))
+        print("Playing as " + str(self.race_self))
 
     # Proxy 4 rax all in
     # https://lotv.spawningtool.com/build/82647/
@@ -62,9 +63,9 @@ class CheatMoney(sc2.BotAI):
 
     async def on_step(self, iteration):
         self.iteration = iteration
-        await self.racecheck_self()
         await self.macro()
         await self.attack()
 
     async def on_start(self):
         self.hq_location = self.townhalls.ready.first.position
+        await self.racecheck_self()
