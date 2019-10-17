@@ -3,7 +3,6 @@ from cheatmoney.ressources import Ressources
 from cheatmoney.techtree import TechTree
 from cheatmoney.unitmanager import UnitManager
 from cheatmoney.util import Util
-from sc2 import race_worker
 
 
 class CheatMoney(sc2.BotAI):
