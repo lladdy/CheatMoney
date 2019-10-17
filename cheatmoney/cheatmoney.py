@@ -10,23 +10,14 @@ class CheatMoney(sc2.BotAI):
 
     def __init__(self):
         super().__init__()
-        self.iteration = None
+        self.iteration = 0
         self.unitmanager = UnitManager(self)
         self.techtree = TechTree(self)
         self.util = Util(self)
         self.ressources = Ressources(self)
 
-        self.target_worker_count = 14
-
-        self.build_worker1_done = False
-
         self.race_self = None
         self.hq_location = None
-
-    async def build_worker1(self):
-        if not self.build_worker1_done:
-            self.do(self.townhalls.first.train(race_worker[self.race]))
-            self.build_worker1_done = True
 
     def detect_race(self, query):
         for unit in self.techtree.techtree['Unit']:
@@ -45,14 +36,8 @@ class CheatMoney(sc2.BotAI):
     # https://lotv.spawningtool.com/build/29987/
 
     async def macro(self):
-        # mineral = self.mineral_field.closest_to(self.hq_location)
-        # for worker in self.workers.idle:
-        #     self.do(worker.gather(mineral))
-
         await self.ressources.manageSupply()
         await self.ressources.manageWorkers()
-
-        # await self.build_worker1()
         await self.unitmanager.createBuilding("Barracks", 5, self.hq_location)
         await self.unitmanager.createUnit("Marine", 100)
 
