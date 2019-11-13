@@ -19,5 +19,9 @@ if __name__ == '__main__':
         print("Starting local game...")
         sc2.run_game(sc2.maps.get("AbyssalReefLE"), [
             bot,
-            Computer(Race.Random, Difficulty.VeryHard)
-        ], realtime=False)
+            Computer(Race.Random, Difficulty.VeryHard),
+            # Computer(Race.Random, Difficulty.VeryEasy)
+        ],
+                    # Force same spawn every game
+                     random_seed=1000,
+                     realtime=False)
