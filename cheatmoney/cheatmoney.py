@@ -1,11 +1,14 @@
 import os
 
+from sklearn import preprocessing
+
 import sc2
 from cheatmoney.ressources import Ressources
 from cheatmoney.techtree import TechTree
 from cheatmoney.unitmanager import UnitManager
 from cheatmoney.util import Util
 from sc2 import UnitTypeId
+from sc2.position import Point2
 from sc2.unit import Unit
 from sc2.units import Units
 
@@ -103,9 +106,21 @@ class WorkerManager:
 
     async def on_step(self, iteration):
         for worker in self.workers:
-            # for some reason the workers in the list don't update their state, so just doing this as a hack
-            real_worker = self.bot.workers.find_by_tag(worker.tag)
-            if real_worker.is_carrying_minerals:  # if worker has minerals, issue a return to base command
-                real_worker.return_resource()
-            else:  # if work doesn't have minerals, path to mineral patch
-                self.bot.do(real_worker.gather(worker.assigned_mineral))
+            # # for some reason the workers in the list don't update their state, so just doing this as a hack
+            # real_worker = self.bot.workers.find_by_tag(worker.tag)
+            # if real_worker.is_carrying_minerals:  # if worker has minerals, issue a return to base command
+            #     real_worker.return_resource()
+            # else:  # if work doesn't have minerals, path to mineral patch
+            #     self.bot.do(real_worker.gather(worker.assigned_mineral))
+
+            # for some reason the work in our list doesn't get its data updated, so we need to get this one
+            updated_worker = self.bot.workers.find_by_tag(worker.tag)
+            if updated_worker.is_carrying_minerals:  # if worker has minerals, return to base
+                updated_worker.return_resource()
+            elif updated_worker.distance_to(
+                worker.assigned_mineral.position) > 1.5:  # if work doesn't have minerals, path to mineral patch
+                pos = updated_worker.position - self.bot.hq_location
+                norm = preprocessing.normalize([pos], norm='l1')[0]
+                self.bot.do(updated_worker.move(worker.assigned_mineral.position-Point2((norm[0], norm[1]))))
+            else:
+                self.bot.do(updated_worker.gather(worker.assigned_mineral))
