@@ -62,7 +62,7 @@ class CheatMoney(sc2.BotAI):
 
         await self.worker_manager.on_step(iteration)
 
-        if self.iteration == 500:
+        if self.iteration  == 500 *8:
             with open('minerals.txt', 'a') as file:
                 file.write(os.linesep + str(self.minerals))
                 raise 'exit'  # just crash
@@ -71,6 +71,7 @@ class CheatMoney(sc2.BotAI):
         # await self.attack()
 
     async def on_start(self):
+        self.client.game_step = 1
         self.hq_location = self.townhalls.ready.first.position
         await self.racecheck_self()
 
