@@ -78,6 +78,8 @@ class CheatMoney(sc2.BotAI):
 
 
 class WorkerManager:
+    """ Responsible for managing the workers """
+
     def __init__(self, bot: CheatMoney, minerals):
         self.bot = bot
         self.minerals = Units(minerals, self.bot)
@@ -105,22 +107,22 @@ class WorkerManager:
                     break
 
     async def on_step(self, iteration):
+        # todo: the "step rate" (or whatever it's called) might affect the efficacy of our technique
+        # todo: check to see if we can change the step rate to as often as possible
         for worker in self.workers:
-            # # for some reason the workers in the list don't update their state, so just doing this as a hack
-            # real_worker = self.bot.workers.find_by_tag(worker.tag)
-            # if real_worker.is_carrying_minerals:  # if worker has minerals, issue a return to base command
-            #     real_worker.return_resource()
-            # else:  # if work doesn't have minerals, path to mineral patch
-            #     self.bot.do(real_worker.gather(worker.assigned_mineral))
+            # todo: mineral walk and have workers "bump" each other
 
             # for some reason the work in our list doesn't get its data updated, so we need to get this one
             updated_worker = self.bot.workers.find_by_tag(worker.tag)
             if updated_worker.is_carrying_minerals:  # if worker has minerals, return to base
                 updated_worker.return_resource()
-            elif updated_worker.distance_to(
-                worker.assigned_mineral.position) > 1.5:  # if work doesn't have minerals, path to mineral patch
+            # if the worker is over a certain distance away, path to mineral patch
+            # todo: tweak this distance to be optimal
+            elif updated_worker.distance_to(worker.assigned_mineral.position) > 1.5:
                 pos = updated_worker.position - self.bot.hq_location
                 norm = preprocessing.normalize([pos], norm='l1')[0]
-                self.bot.do(updated_worker.move(worker.assigned_mineral.position-Point2((norm[0], norm[1]))))
+                self.bot.do(updated_worker.move(worker.assigned_mineral.position - Point2((norm[0], norm[1]))))
+            # if the worker is in range to gather, issue a gather command
+            # todo: is it possible to manually check whether the worker is within gathering range?
             else:
                 self.bot.do(updated_worker.gather(worker.assigned_mineral))
