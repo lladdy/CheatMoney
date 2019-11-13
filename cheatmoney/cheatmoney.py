@@ -1,8 +1,49 @@
+import os
+
 import sc2
 from cheatmoney.ressources import Ressources
 from cheatmoney.techtree import TechTree
 from cheatmoney.unitmanager import UnitManager
 from cheatmoney.util import Util
+from sc2 import UnitTypeId
+from sc2.unit import Unit
+from sc2.units import Units
+
+
+class WorkerManager:
+    def __init__(self, bot: sc2.BotAI, minerals):
+        self.bot = bot
+        self.minerals = Units(minerals, self.bot)
+        self.workers = []
+
+        for mineral in self.minerals:
+            mineral.workers_assigned = 0
+
+    async def add(self, worker: Unit):
+        self.workers.append(worker)
+        has_been_assigned = False
+        for mineral in self.minerals.sorted_by_distance_to(worker):
+            if mineral.workers_assigned == 0:
+                worker.assigned_mineral = mineral
+                has_been_assigned = True
+                mineral.workers_assigned = 1
+                break
+
+        if not has_been_assigned:
+            for mineral in self.minerals.sorted_by_distance_to(worker):
+                if mineral.workers_assigned == 1:
+                    worker.assigned_mineral = mineral
+                    has_been_assigned = True
+                    mineral.workers_assigned = 2
+                    break
+
+    async def on_step(self, iteration):
+        for worker in self.workers:
+            real_worker = self.bot.workers.find_by_tag(worker.tag)
+            if real_worker.is_carrying_minerals:  # if worker has minerals, return to base
+                real_worker.return_resource()
+            else:  # if work doesn't have minerals, path to mineral patch
+                self.bot.do(real_worker.gather(worker.assigned_mineral))
 
 
 class CheatMoney(sc2.BotAI):
@@ -45,11 +86,25 @@ class CheatMoney(sc2.BotAI):
             for unit in self.units(sc2.UnitTypeId.MARINE).ready:
                 self.do(unit.attack(self.enemy_start_locations[0]))
 
+    async def on_unit_created(self, unit: Unit):
+        if unit.type_id == UnitTypeId.SCV:
+            await self.worker_manager.add(unit)
+
     async def on_step(self, iteration):
         self.iteration = iteration
-        await self.macro()
-        await self.attack()
+
+        await self.worker_manager.on_step(iteration)
+
+        if self.iteration == 500:
+            with open('minerals.txt', 'a') as file:
+                file.write(os.linesep + str(self.minerals))
+                raise 'exit'  # just crash
+
+        # await self.macro()
+        # await self.attack()
 
     async def on_start(self):
         self.hq_location = self.townhalls.ready.first.position
         await self.racecheck_self()
+
+        self.worker_manager = WorkerManager(self, [mineral for mineral in self.mineral_field.visible])
