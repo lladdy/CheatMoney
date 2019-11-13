@@ -103,8 +103,9 @@ class WorkerManager:
 
     async def on_step(self, iteration):
         for worker in self.workers:
+            # for some reason the workers in the list don't update their state, so just doing this as a hack
             real_worker = self.bot.workers.find_by_tag(worker.tag)
-            if real_worker.is_carrying_minerals:  # if worker has minerals, return to base
+            if real_worker.is_carrying_minerals:  # if worker has minerals, issue a return to base command
                 real_worker.return_resource()
             else:  # if work doesn't have minerals, path to mineral patch
                 self.bot.do(real_worker.gather(worker.assigned_mineral))
