@@ -95,21 +95,14 @@ class WorkerManager:
 
     async def add(self, worker: Unit):
         self.workers.append(worker)
-        has_been_assigned = False
-        for mineral in self.minerals.sorted_by_distance_to(worker):
-            if mineral.workers_assigned == 0:
-                worker.assigned_mineral = mineral
-                has_been_assigned = True
-                mineral.workers_assigned = 1
-                break
 
-        if not has_been_assigned:
-            for mineral in self.minerals.sorted_by_distance_to(worker):
-                if mineral.workers_assigned == 1:
-                    worker.assigned_mineral = mineral
-                    has_been_assigned = True
-                    mineral.workers_assigned = 2
-                    break
+        # assign workers to each mineral patch
+        # prioritize the closest minerals. maximum 2 workers per patch
+        for mineral in self.minerals.sorted_by_distance_to(worker):
+            if mineral.workers_assigned < 2:
+                worker.assigned_mineral = mineral
+                mineral.workers_assigned += 1
+                break
 
     async def on_step(self, iteration):
         # todo: the "step rate" (or whatever it's called) might affect the efficacy of our technique
