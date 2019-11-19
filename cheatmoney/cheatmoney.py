@@ -62,7 +62,7 @@ class CheatMoney(sc2.BotAI):
 
         await self.worker_manager.on_step(iteration)
 
-        if self.iteration  == 500 *8:
+        if self.iteration == 200 *8:
             with open('minerals.txt', 'a') as file:
                 file.write(os.linesep + str(self.minerals))
                 raise 'exit'  # just crash
@@ -81,6 +81,8 @@ class CheatMoney(sc2.BotAI):
 class WorkerManager:
     """ Responsible for managing the workers """
 
+    GATHER_RANGE = 1.4
+
     def __init__(self, bot: CheatMoney, minerals):
         self.bot = bot
         self.minerals = Units(minerals, self.bot)
@@ -88,6 +90,8 @@ class WorkerManager:
 
         for mineral in self.minerals:
             mineral.workers_assigned = 0
+
+        print(f'PATH_UNTIL_RANGE: {self.GATHER_RANGE}')
 
     async def add(self, worker: Unit):
         self.workers.append(worker)
@@ -119,7 +123,7 @@ class WorkerManager:
                 updated_worker.return_resource()
             # if the worker is over a certain distance away, path to mineral patch
             # todo: tweak this distance to be optimal
-            elif updated_worker.distance_to(worker.assigned_mineral.position) > 1.5:
+            elif updated_worker.distance_to(worker.assigned_mineral.position) > self.GATHER_RANGE:
                 pos = updated_worker.position - self.bot.hq_location
                 norm = preprocessing.normalize([pos], norm='l1')[0]
                 self.bot.do(updated_worker.move(worker.assigned_mineral.position - Point2((norm[0], norm[1]))))
