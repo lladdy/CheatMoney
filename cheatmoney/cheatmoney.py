@@ -100,6 +100,14 @@ class WorkerManager:
         # prioritize the closest minerals. maximum 2 workers per patch
         for mineral in self.minerals.sorted_by_distance_to(worker):
             if mineral.workers_assigned < 2:
+
+                # if there is already a worker assigned to this patch, assign our worker partners
+                if mineral.workers_assigned == 1:
+                    for worker_partner in self.workers:
+                        if hasattr(worker_partner, 'assigned_mineral') and worker_partner.assigned_mineral == mineral:
+                            worker.worker_partner = worker_partner
+                            worker_partner.worker_partner = worker
+
                 worker.assigned_mineral = mineral
                 mineral.workers_assigned += 1
                 break
