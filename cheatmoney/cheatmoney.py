@@ -1,3 +1,4 @@
+import math
 import os
 
 from sklearn import preprocessing
@@ -82,6 +83,8 @@ class WorkerManager:
     """ Responsible for managing the workers """
 
     GATHER_RANGE = 1.4
+    MINERAL_POP_RANGE_MAX = 0.2
+    MINERAL_POP_RANGE_MIN = 0.001
 
     def __init__(self, bot: CheatMoney, minerals):
         self.bot = bot
@@ -113,22 +116,38 @@ class WorkerManager:
                 break
 
     async def on_step(self, iteration):
-        # todo: the "step rate" (or whatever it's called) might affect the efficacy of our technique
-        # todo: check to see if we can change the step rate to as often as possible
         for worker in self.workers:
-            # todo: mineral walk and have workers "bump" each other
-
             # for some reason the work in our list doesn't get its data updated, so we need to get this one
             updated_worker = self.bot.workers.find_by_tag(worker.tag)
             if updated_worker.is_carrying_minerals:  # if worker has minerals, return to base
-                updated_worker.return_resource()
+                # check for mineral popping opportunity
+                if hasattr(worker, 'worker_partner') \
+                    and self.in_mineral_pop_range(worker) \
+                    and self.on_correct_side_of_partner(worker)\
+                    and updated_worker.distance_to(self.bot.hq_location) > 4:
+                    self.bot.do(updated_worker.move(self.bot.hq_location))
+                else:
+                    self.bot.do(updated_worker.return_resource())
             # if the worker is over a certain distance away, path to mineral patch
-            # todo: tweak this distance to be optimal
             elif updated_worker.distance_to(worker.assigned_mineral.position) > self.GATHER_RANGE:
                 pos = updated_worker.position - self.bot.hq_location
                 norm = preprocessing.normalize([pos], norm='l1')[0]
                 self.bot.do(updated_worker.move(worker.assigned_mineral.position - Point2((norm[0], norm[1]))))
             # if the worker is in range to gather, issue a gather command
-            # todo: is it possible to manually check whether the worker is within gathering range?
             else:
                 self.bot.do(updated_worker.gather(worker.assigned_mineral))
+
+    def in_mineral_pop_range(self, worker):
+        # for some reason the work in our list doesn't get its data updated, so we need to get this one
+        updated_worker = self.bot.workers.find_by_tag(worker.tag)
+        updated_worker_partner = self.bot.workers.find_by_tag(worker.worker_partner.tag)
+        pos = updated_worker.position - updated_worker_partner.position
+        range = math.hypot(pos[0], pos[1])
+        return range < self.MINERAL_POP_RANGE_MAX and range > self.MINERAL_POP_RANGE_MIN
+
+    def on_correct_side_of_partner(self, worker):
+        # for some reason the work in our list doesn't get its data updated, so we need to get this one
+        updated_worker = self.bot.workers.find_by_tag(worker.tag)
+        updated_worker_partner = self.bot.workers.find_by_tag(worker.worker_partner.tag)
+        return updated_worker_partner.distance_to(worker.assigned_mineral.position) < updated_worker.distance_to(
+            worker.assigned_mineral.position)
